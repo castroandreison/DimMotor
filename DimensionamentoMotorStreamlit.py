@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 from fractions import Fraction
 import io
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 
 # Inicializa o estado da sessão se não estiver já inicializado
 if 'motores' not in st.session_state:
@@ -63,36 +61,22 @@ fatores_monofasico = {
     1: 1, 2: 0.75, 3: 0.633, 4: 0.575, 5: 0.54, 6: 0.5, 7: 0.471, 8: 0.45, 9: 0.433, 10: 0.42
 }
 
-# Função para criar PDF
-def criar_pdf(dados):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    largura, altura = letter
+# Interface com o usuário
+st.title("Gerenciamento de Motores")
 
-    c.drawString(100, altura - 50, "Relatório de Motores")
-    y = altura - 100
+# Tipo de motor
+tipo = st.selectbox("Tipo de Motor", ["Trifásico", "Monofásico"])
 
-    for index, row in dados.iterrows():
-        c.drawString(100, y, f"Tipo: {row['Tipo']}")
-        c.drawString(100, y - 15, f"Potência (kW): {row['Potência (kW)']}")
-        c.drawString(100, y - 30, f"Quantidade: {row['Quantidade']}")
-        c.drawString(100, y - 45, f"Descrição: {row['Descrição']}")
-        c.drawString(100, y - 60, f"Total kVA: {row['Total kVA']:.2f}")
-        c.drawString(100, y - 75, f"Fator de Demanda: {row['Fator de Demanda']}")
-        y -= 90
+# Potência do motor
+potencia = st.selectbox("Potência (kW)", list(tabela_trifasico.keys() if tipo == 'Trifásico' else tabela_monofasico.keys()))
 
-    c.save()
-    buffer.seek(0)
-    return buffer
+# Quantidade de motores
+quantidade = st.number_input("Quantidade", min_value=1, max_value=10, value=1)
 
-# Formulário para entrada de dados
-st.header("Cadastro de Motores")
-tipo = st.selectbox("Tipo do Motor", ["Trifásico", "Monofásico"])
-potencia = st.number_input("Potência (kW)", min_value=0.0, step=0.1)
-quantidade = st.slider("Quantidade", min_value=1, max_value=10)
+# Descrição do motor
 descricao = st.text_input("Descrição")
-fator = st.number_input("Fator de Demanda", min_value=0.0, step=0.01)
 
+# Botão para adicionar motor
 if st.button("Adicionar Motor"):
     kva, fator = calcular_kva(tipo, potencia, quantidade)
     if kva is not None:
@@ -115,20 +99,11 @@ if st.session_state.motores:
     st.write("Lista de Motores:")
     st.dataframe(df)
 
-    # Download de dados como CSV
+    # Download de dados (se desejado)
     csv = df.to_csv(index=False, encoding='utf-8-sig')
     st.download_button(
         label="Baixar Dados como CSV",
         data=csv,
         file_name="motores.csv",
         mime="text/csv"
-    )
-
-    # Download de dados como PDF
-    pdf_buffer = criar_pdf(df)
-    st.download_button(
-        label="Baixar Dados como PDF",
-        data=pdf_buffer,
-        file_name="motores.pdf",
-        mime="application/pdf"
     )
