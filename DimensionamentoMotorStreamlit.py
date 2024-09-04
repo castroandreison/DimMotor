@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from fractions import Fraction
+import io
 
 # Inicializa o estado da sessão se não estiver já inicializado
 if 'motores' not in st.session_state:
@@ -61,7 +62,7 @@ fatores_monofasico = {
 }
 
 # Interface com o usuário
-st.title("Gerenciamento de Motores")
+st.title("DEMANDA - Dimensionamento de Motores CELESC")
 
 # Tipo de motor
 tipo = st.selectbox("Tipo de Motor", ["Trifásico", "Monofásico"])
@@ -82,24 +83,27 @@ if st.button("Adicionar Motor"):
         total_kva = kva * fator
         st.session_state.motores.append({
             "Tipo": tipo,
-            "Potência": potencia,
+            "Potência (kW)": potencia,
             "Quantidade": quantidade,
             "Descrição": descricao,
-            "Total kVA": total_kva
+            "Total kVA": total_kva,
+            "Fator de Demanda": fator
         })
         st.success("Motor adicionado com sucesso!")
 
 # Exibir tabela de motores
 if st.session_state.motores:
     df = pd.DataFrame(st.session_state.motores)
+    total_potencia = df["Total kVA"].sum()
+    st.write(f"Potência Total em kVA: {total_potencia:.2f}")
     st.write("Lista de Motores:")
     st.dataframe(df)
 
-# Download de dados (se desejado)
-if st.session_state.motores:
+    # Download de dados (se desejado)
+    csv = df.to_csv(index=False, encoding='utf-8-sig')
     st.download_button(
         label="Baixar Dados como CSV",
-        data=df.to_csv(index=False),
+        data=csv,
         file_name="motores.csv",
         mime="text/csv"
     )
